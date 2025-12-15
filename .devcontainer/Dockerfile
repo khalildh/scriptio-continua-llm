@@ -1,10 +1,19 @@
-FROM rocm/pytorch:rocm6.2_ubuntu22.04_py3.10_pytorch_release_2.3.0
+FROM rocm/dev-ubuntu-22.04:6.2
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
-    && rm -rf /var/lib/apt/lists/*
+    python3.10 \
+    python3.10-venv \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3.10 /usr/bin/python
+
+# Install PyTorch with ROCm 6.2 support (has better gfx1100 support)
+RUN pip install --upgrade pip && \
+    pip install 'numpy<2' && \
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.2
 
 # Install Node.js (required for Claude Code)
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
@@ -22,10 +31,7 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
 RUN npm install -g @anthropic-ai/claude-code
 
 # Install Python-based AI CLIs
-RUN pip install --upgrade pip && \
-    pip install numpy scipy && \
-    pip install google-generativeai && \
-    pip install openai
+RUN pip install scipy google-generativeai openai
 
 # Install Gemini CLI (if available) and OpenAI Codex CLI
 RUN npm install -g @google/generative-ai 2>/dev/null || true

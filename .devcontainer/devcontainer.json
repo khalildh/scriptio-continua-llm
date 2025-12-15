@@ -13,7 +13,7 @@
   ],
   "containerEnv": {
     "HSA_OVERRIDE_GFX_VERSION": "11.0.0",
-    "PYTORCH_ROCM_ARCH": "gfx1151"
+    "PYTORCH_ROCM_ARCH": "gfx1100"
   },
   "customizations": {
     "vscode": {
@@ -31,6 +31,6 @@
       }
     }
   },
-  "postCreateCommand": "pip install tiktoken wandb matplotlib pandas seaborn tqdm datasets transformers",
+  "postCreateCommand": "pip install 'numpy<2' tiktoken wandb matplotlib pandas seaborn tqdm datasets transformers",
   "remoteUser": "root"
 }
