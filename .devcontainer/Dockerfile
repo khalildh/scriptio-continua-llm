@@ -1,14 +1,19 @@
 FROM rocm/dev-ubuntu-22.04:6.2
 
-# Install system dependencies
+# Install system dependencies and Python 3.12 (required by ROCm nightlies)
 RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
-    python3.10 \
-    python3.10-venv \
-    python3-pip \
+    software-properties-common \
+    && add-apt-repository -y ppa:deadsnakes/ppa \
+    && apt-get update && apt-get install -y \
+    python3.12 \
+    python3.12-venv \
+    python3.12-dev \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -sf /usr/bin/python3.10 /usr/bin/python
+    && ln -sf /usr/bin/python3.12 /usr/bin/python \
+    && ln -sf /usr/bin/python3.12 /usr/bin/python3 \
+    && curl -sS https://bootstrap.pypa.io/get-pip.py | python3.12
 
 # Install ROCm SDK and PyTorch with native gfx1151 (Strix) support from TheRock nightlies
 RUN pip install --upgrade pip && \

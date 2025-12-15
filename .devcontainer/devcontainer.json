@@ -27,7 +27,7 @@
         "Google.geminicodeassist"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/opt/conda/bin/python"
+        "python.defaultInterpreterPath": "/usr/bin/python3.12"
       }
     }
   },
