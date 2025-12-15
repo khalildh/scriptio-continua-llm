@@ -87,6 +87,17 @@ THESLINGSANDARROWSOFOUTRAGEOUSFORTUNE
 - **Recommended**: GPU with 8GB+ VRAM (tested on AMD Radeon 8060S)
 - **Training time**: ~20 min (small), ~60 min (medium) on consumer GPU
 
+### AMD GPU Support (Strix APUs)
+
+The devcontainer is configured for AMD Strix Halo/Strix Point iGPUs (gfx1151) using [TheRock](https://github.com/ROCm/TheRock) nightly builds:
+
+```bash
+pip install --index-url https://rocm.nightlies.amd.com/v2/gfx1151/ "rocm[libraries,devel]"
+pip install --index-url https://rocm.nightlies.amd.com/v2/gfx1151/ --pre torch torchvision torchaudio
+```
+
+See [TheRock RELEASES.md](https://github.com/ROCm/TheRock/blob/main/RELEASES.md) for other supported GPU architectures.
+
 ## Expected Results
 
 After training, you'll get:
