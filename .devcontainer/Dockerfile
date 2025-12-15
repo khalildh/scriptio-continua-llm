@@ -1,6 +1,7 @@
 FROM rocm/dev-ubuntu-22.04:6.2
 
 # Install system dependencies and Python 3.12 (required by ROCm nightlies)
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
