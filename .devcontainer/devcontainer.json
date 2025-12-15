@@ -21,7 +21,10 @@
         "ms-python.python",
         "ms-python.vscode-pylance",
         "ms-toolsai.jupyter",
-        "GitHub.copilot"
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "anthropic.claude-code",
+        "Google.geminicodeassist"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/opt/conda/bin/python"
