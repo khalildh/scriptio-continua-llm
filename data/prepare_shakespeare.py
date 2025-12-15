@@ -26,17 +26,13 @@ def to_scriptio_continua(text: str) -> str:
     - No word boundaries (no spaces)
     - No punctuation
     - No case distinction (we use uppercase)
-    - Newlines preserved for structure (optional, can be removed)
+    - No newlines - pure continuous text
     """
     result = []
     for char in text:
-        if char == '\n':
-            # Preserve newlines to maintain some document structure
-            # This is a design choice - pure scriptio continua might remove these too
-            result.append(char)
-        elif char.isalpha():
+        if char.isalpha():
             result.append(char.upper())
-        # Everything else (spaces, punctuation, numbers) is dropped
+        # Everything else (spaces, punctuation, numbers, newlines) is dropped
     return ''.join(result)
 
 def prepare_dataset(data: str, output_dir: Path, dataset_name: str):
