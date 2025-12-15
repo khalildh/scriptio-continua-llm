@@ -1,0 +1,49 @@
+# Data files
+data/shakespeare_modern/
+data/shakespeare_scriptio/
+*.bin
+
+# Model checkpoints
+experiments/
+*.pt
+*.pth
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+wandb/
+
+# Temporary
+tmp/
+temp/
+
+# Keep nanoGPT base for reference (optional, can be removed)
+# nanoGPT_base/

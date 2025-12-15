@@ -1,0 +1,21 @@
+# Core ML
+torch>=2.0.0
+numpy>=1.24.0
+
+# Data processing
+requests
+datasets
+tiktoken
+transformers
+
+# Visualization & Analysis
+matplotlib
+seaborn
+pandas
+scipy
+
+# Utilities
+tqdm
+
+# Optional: Experiment tracking
+# wandb

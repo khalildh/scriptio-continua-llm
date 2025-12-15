@@ -1,0 +1,33 @@
+{
+  "name": "Scriptio Continua LLM",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "runArgs": [
+    "--device=/dev/kfd",
+    "--device=/dev/dri",
+    "--group-add=video",
+    "--group-add=render",
+    "--security-opt=seccomp=unconfined",
+    "--shm-size=16g"
+  ],
+  "containerEnv": {
+    "HSA_OVERRIDE_GFX_VERSION": "11.0.0",
+    "PYTORCH_ROCM_ARCH": "gfx1151"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter",
+        "GitHub.copilot"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/opt/conda/bin/python"
+      }
+    }
+  },
+  "postCreateCommand": "pip install tiktoken wandb matplotlib pandas seaborn tqdm datasets transformers",
+  "remoteUser": "root"
+}
