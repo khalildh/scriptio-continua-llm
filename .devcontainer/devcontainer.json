@@ -8,11 +8,13 @@
     "--device=/dev/dri",
     "--group-add=video",
     "--group-add=render",
+    "--ipc=host",
+    "--cap-add=SYS_PTRACE",
     "--security-opt=seccomp=unconfined",
     "--shm-size=16g"
   ],
   "containerEnv": {
-    "PYTORCH_ROCM_ARCH": "gfx1151"
+    "TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL": "1"
   },
   "customizations": {
     "vscode": {
@@ -26,7 +28,7 @@
         "Google.geminicodeassist"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/usr/bin/python3.12"
+        "python.defaultInterpreterPath": "/opt/conda/bin/python"
       }
     }
   },
