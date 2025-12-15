@@ -18,9 +18,8 @@ RUN apt-get update && apt-get install -y \
 
 # Install ROCm SDK and PyTorch with native gfx1151 (Strix) support from TheRock nightlies
 RUN pip install --upgrade pip && \
-    pip install 'numpy<2' && \
-    pip install --find-links https://rocm.nightlies.amd.com/v2/gfx1151/ "rocm[libraries,devel]" && \
-    pip install --find-links https://rocm.nightlies.amd.com/v2/gfx1151/ --pre torch torchaudio torchvision
+    pip install --index-url https://rocm.nightlies.amd.com/v2/gfx1151/ "rocm[libraries,devel]" && \
+    pip install --index-url https://rocm.nightlies.amd.com/v2/gfx1151/ --pre torch torchaudio torchvision
 
 # Install Node.js (required for Claude Code)
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
