@@ -12,7 +12,6 @@
     "--shm-size=16g"
   ],
   "containerEnv": {
-    "HSA_OVERRIDE_GFX_VERSION": "11.5.1",
     "PYTORCH_ROCM_ARCH": "gfx1151"
   },
   "customizations": {
