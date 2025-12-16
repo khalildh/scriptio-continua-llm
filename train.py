@@ -26,6 +26,7 @@ import numpy as np
 import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
+import wandb
 
 from model import GPTConfig, GPT
 
@@ -241,7 +242,7 @@ def estimate_loss():
             with ctx:
                 logits, loss = model(X, Y)
             losses[k] = loss.item()
-        out[split] = losses.mean()
+        out[split] = losses.mean().item()
     model.train()
     return out
 
@@ -261,7 +262,6 @@ def get_lr(it):
 
 # logging
 if wandb_log and master_process:
-    import wandb
     wandb.init(project=wandb_project, name=wandb_run_name, config=config)
 
 # training loop
@@ -280,10 +280,9 @@ while True:
     # evaluate the loss on train/val sets and write checkpoints
     if iter_num % eval_interval == 0 and master_process:
         losses = estimate_loss()
-        log(f"step {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+        log(f"[eval] iter {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
         if wandb_log:
             wandb.log({
-                "iter": iter_num,
                 "train/loss": losses['train'],
                 "val/loss": losses['val'],
                 "lr": lr,
@@ -343,6 +342,12 @@ while True:
             mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps, dt)
             running_mfu = mfu if running_mfu == -1.0 else 0.9*running_mfu + 0.1*mfu
         log(f"iter {iter_num}: loss {lossf:.4f}, time {dt*1000:.2f}ms, mfu {running_mfu*100:.2f}%")
+        if wandb_log:
+            wandb.log({
+                "loss": lossf,
+                "mfu": running_mfu * 100,
+                "lr": lr,
+            })
     iter_num += 1
     local_iter_num += 1
 
@@ -356,3 +361,7 @@ if ddp:
 # close log file
 if log_file_handle is not None:
     log_file_handle.close()
+
+# finish wandb run
+if wandb_log and master_process:
+    wandb.finish()

@@ -18,7 +18,7 @@ dataset = 'shakespeare_scriptio'  # or 'shakespeare_modern' for normal text
 batch_size = 64
 block_size = 256
 max_iters = 5000
-eval_interval = 250
+eval_interval = 50
 eval_iters = 200
 log_interval = 1  # Log every iteration for visibility
 
