@@ -23,7 +23,7 @@ eval_iters = 200
 log_interval = 1  # Log every iteration for visibility
 
 # Checkpointing
-out_dir = 'out-shakespeare-small'
+out_dir = 'out-shakespeare-scriptio'
 always_save_checkpoint = True
 
 # Learning rate schedule
@@ -43,4 +43,4 @@ compile = False  # torch.compile can be buggy on ROCm, disable for safety
 log_file = True  # Save logs to timestamped file in out_dir
 wandb_log = True  # Enable wandb logging
 wandb_project = 'scriptio-continua'
-wandb_run_name = 'shakespeare-small'
+wandb_run_name = 'shakespeare-scriptio'  # Scriptio continua version
