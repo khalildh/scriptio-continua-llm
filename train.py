@@ -276,9 +276,13 @@ def save_checkpoint(reason=""):
             'best_val_loss': best_val_loss,
             'config': config,
         }
+        # Save latest checkpoint (for resuming)
         ckpt_path = os.path.join(out_dir, 'ckpt.pt')
         log(f"saving checkpoint to {ckpt_path} {reason}")
         torch.save(ckpt, ckpt_path)
+        # Also save iteration-numbered checkpoint (for comparison)
+        iter_ckpt_path = os.path.join(out_dir, f'ckpt_iter_{iter_num}.pt')
+        torch.save(ckpt, iter_ckpt_path)
 
 # handle Ctrl+C gracefully - save checkpoint before exit
 def signal_handler(sig, frame):
