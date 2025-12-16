@@ -153,6 +153,7 @@ def get_batch(split):
 # init these up here, can override if init_from='resume' (i.e. from a checkpoint)
 iter_num = 0
 best_val_loss = 1e9
+wandb_run_id = None  # will be set by wandb.init() and saved in checkpoint
 
 # attempt to derive vocab_size from the dataset
 meta_path = os.path.join(data_dir, 'meta.pkl')
@@ -198,6 +199,8 @@ elif init_from == 'resume':
     model.load_state_dict(state_dict)
     iter_num = checkpoint['iter_num']
     best_val_loss = checkpoint['best_val_loss']
+    # get wandb run id for resuming the same run
+    wandb_run_id = checkpoint.get('wandb_run_id', None)
 elif init_from.startswith('gpt2'):
     log(f"Initializing from OpenAI GPT-2 weights: {init_from}")
     # initialize from OpenAI GPT-2 weights
@@ -263,7 +266,14 @@ def get_lr(it):
 
 # logging
 if wandb_log and master_process:
-    wandb.init(project=wandb_project, name=wandb_run_name, config=config)
+    if wandb_run_id is not None:
+        # Resume existing wandb run
+        wandb.init(project=wandb_project, id=wandb_run_id, resume="must", config=config)
+        log(f"Resumed wandb run: {wandb_run_id}")
+    else:
+        # Start new wandb run
+        wandb.init(project=wandb_project, name=wandb_run_name, config=config)
+    wandb_run_id = wandb.run.id  # save for checkpoint
 
 # checkpoint saving function
 # Save iteration-numbered checkpoints only at these milestones
@@ -278,6 +288,7 @@ def save_checkpoint(reason=""):
             'iter_num': iter_num,
             'best_val_loss': best_val_loss,
             'config': config,
+            'wandb_run_id': wandb_run_id,
         }
         # Save latest checkpoint (for resuming)
         ckpt_path = os.path.join(out_dir, 'ckpt.pt')
