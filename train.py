@@ -266,6 +266,9 @@ if wandb_log and master_process:
     wandb.init(project=wandb_project, name=wandb_run_name, config=config)
 
 # checkpoint saving function
+# Save iteration-numbered checkpoints only at these milestones
+checkpoint_milestones = [0, 500, 1000, 2000, 3000, 4000, 5000]
+
 def save_checkpoint(reason=""):
     if master_process:
         ckpt = {
@@ -280,9 +283,11 @@ def save_checkpoint(reason=""):
         ckpt_path = os.path.join(out_dir, 'ckpt.pt')
         log(f"saving checkpoint to {ckpt_path} {reason}")
         torch.save(ckpt, ckpt_path)
-        # Also save iteration-numbered checkpoint (for comparison)
-        iter_ckpt_path = os.path.join(out_dir, f'ckpt_iter_{iter_num}.pt')
-        torch.save(ckpt, iter_ckpt_path)
+        # Save iteration-numbered checkpoint only at milestones (saves disk space)
+        if iter_num in checkpoint_milestones:
+            iter_ckpt_path = os.path.join(out_dir, f'ckpt_iter_{iter_num}.pt')
+            log(f"saving milestone checkpoint: {iter_ckpt_path}")
+            torch.save(ckpt, iter_ckpt_path)
 
 # handle Ctrl+C gracefully - save checkpoint before exit
 def signal_handler(sig, frame):
