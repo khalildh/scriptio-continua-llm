@@ -9,8 +9,8 @@ import sys
 import os
 
 CONFIGS = [
+    'config/train_shakespeare_modern.py',  # modern text first (easier to evaluate)
     'config/train_shakespeare_small.py',   # scriptio continua
-    'config/train_shakespeare_modern.py',  # modern text
 ]
 
 def get_init_from(out_dir):
