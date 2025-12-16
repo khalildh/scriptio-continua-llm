@@ -20,6 +20,7 @@ import os
 import time
 import math
 import pickle
+import signal
 from contextlib import nullcontext
 
 import numpy as np
@@ -264,6 +265,31 @@ def get_lr(it):
 if wandb_log and master_process:
     wandb.init(project=wandb_project, name=wandb_run_name, config=config)
 
+# checkpoint saving function
+def save_checkpoint(reason=""):
+    if master_process:
+        ckpt = {
+            'model': raw_model.state_dict(),
+            'optimizer': optimizer.state_dict(),
+            'model_args': model_args,
+            'iter_num': iter_num,
+            'best_val_loss': best_val_loss,
+            'config': config,
+        }
+        ckpt_path = os.path.join(out_dir, 'ckpt.pt')
+        log(f"saving checkpoint to {ckpt_path} {reason}")
+        torch.save(ckpt, ckpt_path)
+
+# handle Ctrl+C gracefully - save checkpoint before exit
+def signal_handler(sig, frame):
+    save_checkpoint("(interrupted)")
+    if wandb_log and master_process:
+        wandb.finish()
+    log("Training interrupted. Checkpoint saved.")
+    exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+
 # training loop
 X, Y = get_batch('train') # fetch the very first batch
 t0 = time.time()
@@ -290,17 +316,7 @@ while True:
             })
         if losses['val'] < best_val_loss or always_save_checkpoint:
             best_val_loss = losses['val']
-            if iter_num > 0:
-                checkpoint = {
-                    'model': raw_model.state_dict(),
-                    'optimizer': optimizer.state_dict(),
-                    'model_args': model_args,
-                    'iter_num': iter_num,
-                    'best_val_loss': best_val_loss,
-                    'config': config,
-                }
-                log(f"saving checkpoint to {out_dir}")
-                torch.save(checkpoint, os.path.join(out_dir, 'ckpt.pt'))
+            save_checkpoint()
     if iter_num == 0 and eval_only:
         break
 

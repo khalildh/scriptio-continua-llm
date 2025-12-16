@@ -22,6 +22,10 @@ eval_interval = 50
 eval_iters = 200
 log_interval = 1  # Log every iteration for visibility
 
+# Checkpointing
+out_dir = 'out-shakespeare-small'
+always_save_checkpoint = True
+
 # Learning rate schedule
 learning_rate = 1e-3
 min_lr = 1e-4
