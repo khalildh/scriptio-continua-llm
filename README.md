@@ -7,6 +7,8 @@ This project investigates how removing word boundaries (spaces), punctuation, an
 1. **Modern text**: Standard English with spaces, punctuation, and mixed case
 2. **Scriptio continua**: Ancient writing style with no spaces, no punctuation, uppercase only
 
+Three ablation conditions (`python run_experiment.py --ablation`) each change one variable at a time: **no-spaces**, **no-punctuation**, and **uppercase**. See [Results](#results).
+
 ## Background
 
 Historical *scriptio continua* (Latin: "continuous script") was the standard writing convention in many ancient languages, including Greek, Latin, and still used today in languages like Mandarin and Japanese (without spaces between words).
@@ -98,7 +100,34 @@ pip install --index-url https://rocm.nightlies.amd.com/v2/gfx1151/ --pre torch t
 
 See [TheRock RELEASES.md](https://github.com/ROCm/TheRock/blob/main/RELEASES.md) for other supported GPU architectures.
 
-## Expected Results
+## Results
+
+### Shakespeare ablation (April 2026)
+
+Five character-level models were trained on Shakespeare on a Modal cloud GPU, one per condition, for about 1,400–1,500 iterations each. The three ablation conditions (`--ablation`) each change one variable, so the scriptio continua effect can be split into its parts.
+
+| Condition | What changed | Vocab | Best val loss (nats/char) | BPC | Best at iter |
+|---|---|---|---|---|---|
+| uppercase | case only | 39 | **1.450** | 2.09 | 500 |
+| modern (baseline) | nothing | 65 | 1.473 | 2.12 | 550 |
+| nopunct | punctuation only | 55 | 1.488 | 2.15 | 550 |
+| nospaces | spaces only | 64 | 1.825 | 2.63 | 450 |
+| scriptio | spaces + punctuation + case | 26 | 1.846 | 2.66 | 450 |
+
+**Findings**
+
+- **Removing spaces causes almost all of the penalty.** No-spaces alone raises validation loss by about 0.35 over the baseline, which is nearly the whole gap to full scriptio continua (about 0.37).
+- **Case and punctuation barely matter.** Uppercasing helped slightly (−0.02), probably because the vocabulary is smaller. Removing punctuation hurt slightly (+0.015). Both effects are within what you'd expect from noise.
+- **Once spaces are gone, the other changes add almost nothing.** Scriptio continua is only about 0.02 worse than no-spaces alone.
+
+**Caveats**
+
+- **Every run overfit badly.** Validation loss bottomed out around iterations 450–550, then rose while training loss kept falling (for example, scriptio ended at 0.12 train loss and 3.35 val loss). The table reports each run's best checkpoint. Later runs need more dropout or early stopping, or else more data.
+- **Loss per character isn't fully comparable across conditions.** Texts without spaces have fewer characters, and spaces are easy to predict, which lowers the baseline's per-character average. A fairer comparison is total bits over the validation set, normalized to the same original text length. That hasn't been computed yet.
+- **Each condition was run once, with one seed.** Differences under about 0.05 shouldn't be treated as meaningful.
+- **WikiText runs** (`wikitext-*`) have checkpoints on the Modal volume `scriptio-continua-vol` but no training logs, so they haven't been evaluated yet.
+
+## Expected Outputs
 
 After training, you'll get:
 
