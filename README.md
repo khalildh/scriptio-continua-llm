@@ -155,6 +155,57 @@ Because removing characters shortens the text, the table reports two rates:
 - **One seed per condition**, and training stopped at iteration 1,000 of 5,000. Rankings could change with longer training.
 - **The modern vocabulary is large** (thousands of Unicode characters), which is why iteration-0 loss is about 8.5 nats for every condition.
 
+### CJK Shakespeare pilot (November 2026)
+
+Chinese and Japanese are written without spaces, so they test the question from the other side: does *adding* word boundaries help? This pilot uses public-domain translations of the same plays:
+
+| Pair | Plays | Translation | Source |
+|---|---|---|---|
+| English–Chinese | *Hamlet*, *A Midsummer Night's Dream* | Zhu Shenghao (朱生豪, d. 1944) | Chinese Wikisource |
+| English–Japanese | *Romeo and Juliet* | Tsubouchi Shōyō (坪内逍遥, d. 1935) | Aozora Bunko |
+
+English text is the Moby edition from [shakespeare.mit.edu](http://shakespeare.mit.edu).
+
+**Setup**
+
+- **Splits:** train on Acts 1–4 (holding out the last 10% of each for early stopping) and test on Act 5. Every language's test set is a translation of the same English Act 5.
+- **Byte-level models:** every condition uses raw UTF-8 bytes (vocabulary 256), so no language gets a vocabulary advantage. The model is a 3.2M-parameter GPT (4 layers, 256 dims, dropout 0.2), keeping the checkpoint with the best validation loss.
+- **Segmentation:** spaces are inserted between words by jieba for Chinese and MeCab (fugashi + unidic-lite) for Japanese.
+- **Metric:** total bits on Act 5, divided by the English Act 5 character count ("bits per English char"). Lower is better.
+- **Three seeds per condition**, reported as mean ± standard deviation.
+
+| Pair | Condition | Bits per English char |
+|---|---|---|
+| en–zh | English | **2.351** ± 0.009 |
+| en–zh | English, no spaces | 2.524 ± 0.005 |
+| en–zh | Chinese (natural) | 2.772 ± 0.007 |
+| en–zh | Chinese, segmented | 2.780 ± 0.013 |
+| en–ja | English | **2.443** ± 0.008 |
+| en–ja | English, no spaces | 2.637 ± 0.011 |
+| en–ja | Japanese (natural) | 3.013 ± 0.004 |
+| en–ja | Japanese, segmented | 2.972 ± 0.010 |
+
+**Findings**
+
+- **Removing spaces from English hurts clearly.** It costs about 0.17–0.19 bits per English char (+7–8%) in both pairs, far outside the seed-to-seed spread.
+- **Adding spaces to Chinese does nothing.** Natural and segmented Chinese are within noise of each other (2.772 vs 2.780).
+- **Adding spaces to Japanese helps slightly.** It saves about 0.04 bits per English char (−1.4%), a small but consistent gain across seeds.
+- **The effect is asymmetric.** Taking word boundaries away from a language written with them hurts much more than adding them to a language written without them helps. This suggests that, at this scale, the cost comes from losing a cue the text was written around, not from word boundaries being universally necessary.
+
+**Caveats**
+
+- **Cross-language totals aren't comparable.** The translations differ from the English in length and style (Tsubouchi's Japanese test act is 42% more bytes than the English, and Zhu renders verse as prose), and CJK characters take 3 bytes each. Compare conditions *within* a language, not English against Chinese or Japanese.
+- **Segmenters are imperfect.** jieba is tuned for Simplified Chinese and these texts are Traditional; MeCab's modern dictionary struggles with Tsubouchi's old-style Japanese. Better segmentation might help more.
+- **The corpora are tiny** (90–240 KB of training text), and the models start overfitting after 1,000–2,400 iterations. The English no-spaces penalty here is much larger than on WikiText-103, so treat these results as a pilot, not a measurement.
+
+**Reproduce**
+
+```bash
+python data/extract_cjk_shakespeare.py   # parse raw downloads in data/cjk_raw/
+python data/prepare_cjk_shakespeare.py   # needs jieba, fugashi, unidic-lite
+modal run modal_cjk_pilot.py             # 8 conditions x 3 seeds -> results/cjk_pilot.json
+```
+
 ## Expected Outputs
 
 After training, you'll get:
