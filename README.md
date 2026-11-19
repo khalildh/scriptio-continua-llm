@@ -125,7 +125,35 @@ Five character-level models were trained on Shakespeare on a Modal cloud GPU, on
 - **Every run overfit badly.** Validation loss bottomed out around iterations 450–550, then rose while training loss kept falling (for example, scriptio ended at 0.12 train loss and 3.35 val loss). The table reports each run's best checkpoint. Later runs need more dropout or early stopping, or else more data.
 - **Loss per character isn't fully comparable across conditions.** Texts without spaces have fewer characters, and spaces are easy to predict, which lowers the baseline's per-character average. A fairer comparison is total bits over the validation set, normalized to the same original text length. That hasn't been computed yet.
 - **Each condition was run once, with one seed.** Differences under about 0.05 shouldn't be treated as meaningful.
-- **WikiText runs** (`wikitext-*`) have checkpoints on the Modal volume `scriptio-continua-vol` but no training logs, so they haven't been evaluated yet.
+
+### WikiText-103 (April 2026, evaluated November 2026)
+
+The same five conditions were trained on WikiText-103 (about 100M characters), using the same 6-layer, 384-dim model with dropout 0.2. The runs were planned for 5,000 iterations but stopped early; the last intact checkpoint is at iteration 1,000 (the final `ckpt.pt` files on the volume are truncated). Checkpoints were scored with `modal run modal_eval.py`, which makes one full, deterministic pass over each validation set.
+
+Because removing characters shortens the text, the table reports two rates:
+
+- **BPC**: bits per character of that condition's own text.
+- **Bits per modern char**: total bits over the whole validation set, divided by the modern text's length (1,145,909 chars). This compares the cost of encoding the same passages.
+
+| Condition | Val chars (vs modern) | BPC @ 500 | BPC @ 1000 | Bits per modern char @ 1000 |
+|---|---|---|---|---|
+| modern (baseline) | 1,145,909 (100%) | 1.957 | **1.628** | 1.628 |
+| uppercase | 1,145,909 (100%) | 1.934 | 1.633 | 1.633 |
+| nopunct | 1,108,746 (97%) | 1.999 | 1.686 | 1.632 |
+| nospaces | 929,558 (81%) | 2.434 | 2.048 | 1.661 |
+| scriptio | 866,320 (76%) | 2.409 | 2.056 | **1.554** |
+
+**Findings**
+
+- **The Shakespeare pattern holds per character.** Removing spaces raises BPC by about 0.42. Case and punctuation change it by at most about 0.06.
+- **Removing spaces makes the model less efficient overall.** No-spaces text is 19% shorter and carries less information (no word boundaries), yet it still costs more total bits than the modern text (1.661 vs 1.628 per modern char). The model spends more figuring out where words end than it saves by not predicting spaces.
+- **Scriptio continua costs the fewest total bits, but only because it encodes less.** It drops spaces, punctuation, case, digits and newlines, so there is simply less to predict. This isn't evidence that the model learns it better.
+- **No overfitting yet.** Unlike Shakespeare, validation loss was still falling between iterations 500 and 1,000, so these models are undertrained, not overfit.
+
+**Caveats**
+
+- **One seed per condition**, and training stopped at iteration 1,000 of 5,000. Rankings could change with longer training.
+- **The modern vocabulary is large** (thousands of Unicode characters), which is why iteration-0 loss is about 8.5 nats for every condition.
 
 ## Expected Outputs
 

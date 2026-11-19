@@ -23,7 +23,7 @@ def download_wikitext():
     from datasets import load_dataset
 
     print("Downloading WikiText-103 via HuggingFace datasets...")
-    ds = load_dataset("wikitext", "wikitext-103-raw-v1")
+    ds = load_dataset("Salesforce/wikitext","wikitext-103-raw-v1")
 
     train_text = "\n".join(ds["train"]["text"])
     val_text = "\n".join(ds["validation"]["text"])
