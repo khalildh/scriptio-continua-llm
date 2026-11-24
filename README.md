@@ -9,6 +9,17 @@ This project investigates how removing word boundaries (spaces), punctuation, an
 
 Three ablation conditions (`python run_experiment.py --ablation`) each change one variable at a time: **no-spaces**, **no-punctuation**, and **uppercase**. See [Results](#results).
 
+## What the results mean
+
+**Short version:** language models need the word boundaries a text was written with, but adding boundaries to a script that never had them barely helps.
+
+- **Spaces are what make scriptio continua hard.** On both Shakespeare and WikiText-103, removing spaces accounts for nearly all of the extra difficulty. Uppercasing and removing punctuation barely matter.
+- **Removing spaces doesn't save work; it moves it somewhere harder.** No-space text is shorter, yet the model still spends more total effort on it. Without spaces, it has to work out where each word ends before it can predict what comes next.
+- **Adding spaces to Chinese or Japanese helps little or not at all.** Inserting word boundaries made no difference for Chinese and helped Japanese by about 1.4%. Those scripts mark structure in other ways (meaningful characters, switches between scripts), so spaces mostly tell the model what it already knew.
+- **The effect is lopsided.** Removing spaces from English costs about 7–8%; adding them to Chinese gains nothing. Each writing system carries its own cues, and the harm comes from removing a cue the text was built around, not from spaces being universally necessary.
+
+These are small models trained on small corpora (the CJK texts are a few plays), so treat the cross-language findings as a pilot. Details, numbers and caveats are in [Results](#results).
+
 ## Background
 
 Historical *scriptio continua* (Latin: "continuous script") was the standard writing convention in many ancient languages, including Greek, Latin, and still used today in languages like Mandarin and Japanese (without spaces between words).
