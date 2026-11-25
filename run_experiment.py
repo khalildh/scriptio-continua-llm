@@ -3,7 +3,7 @@
 Main experiment runner for the Scriptio Continua LLM study.
 
 This script:
-1. Prepares both datasets (modern and scriptio continua)
+1. Prepares all datasets (modern, scriptio continua, and ablation variants)
 2. Trains identical models on each dataset
 3. Collects training metrics (loss curves, timing)
 4. Generates samples from each model
@@ -13,6 +13,7 @@ This script:
 Usage:
     python run_experiment.py --config config/train_shakespeare_small.py
     python run_experiment.py --config config/train_shakespeare_medium.py
+    python run_experiment.py --ablation  # Include ablation conditions
 """
 
 import argparse
@@ -222,6 +223,55 @@ def compare_experiments(modern_results: dict, scriptio_results: dict):
 
     return comparison
 
+# Ablation conditions: each isolates one variable from the scriptio continua transform
+ABLATION_CONDITIONS = [
+    {
+        'name': 'nospaces',
+        'dataset': 'shakespeare_nospaces',
+        'label': 'No-Spaces Only (ablation)',
+        'description': 'Spaces removed; punctuation and case preserved',
+    },
+    {
+        'name': 'nopunct',
+        'dataset': 'shakespeare_nopunct',
+        'label': 'No-Punctuation Only (ablation)',
+        'description': 'Punctuation removed; spaces and case preserved',
+    },
+    {
+        'name': 'uppercase',
+        'dataset': 'shakespeare_uppercase',
+        'label': 'Uppercase Only (ablation)',
+        'description': 'Case normalized to uppercase; spaces and punctuation preserved',
+    },
+]
+
+
+def compare_all_conditions(results: dict):
+    """Compare all conditions including ablations against the modern baseline."""
+    baseline_metrics = results.get('modern', {}).get('final_metrics', {})
+    baseline_loss = baseline_metrics.get('best_val_loss')
+    baseline_bpc = baseline_metrics.get('bits_per_char')
+
+    if not baseline_loss:
+        return {}
+
+    comparison = {'baseline_loss': baseline_loss, 'baseline_bpc': baseline_bpc, 'conditions': {}}
+
+    for key in ['scriptio', 'nospaces', 'nopunct', 'uppercase']:
+        cond = results.get(key, {})
+        metrics = cond.get('final_metrics', {})
+        loss = metrics.get('best_val_loss')
+        bpc = metrics.get('bits_per_char')
+        if loss:
+            comparison['conditions'][key] = {
+                'loss': loss,
+                'loss_delta': loss - baseline_loss,
+                'bpc': bpc,
+                'bpc_delta': (bpc - baseline_bpc) if bpc and baseline_bpc else None,
+            }
+
+    return comparison
+
 def main():
     parser = argparse.ArgumentParser(description='Run scriptio continua experiment')
     parser.add_argument('--config', type=str, default='config/train_shakespeare_small.py',
@@ -230,6 +280,8 @@ def main():
                         help='Skip training and just analyze existing results')
     parser.add_argument('--experiment-name', type=str, default=None,
                         help='Name for this experiment run')
+    parser.add_argument('--ablation', action='store_true',
+                        help='Include ablation conditions (no-spaces, no-punct, uppercase)')
     args = parser.parse_args()
 
     script_dir = Path(__file__).parent
@@ -281,11 +333,26 @@ def main():
             'Scriptio Continua Shakespeare'
         )
         results['scriptio'] = {'training': scriptio_training}
+
+        # Step 3b: Train ablation conditions (if requested)
+        if args.ablation:
+            for condition in ABLATION_CONDITIONS:
+                cond_dir = exp_dir / condition['name']
+                cond_training = train_model(
+                    condition['dataset'],
+                    args.config,
+                    cond_dir,
+                    condition['label'],
+                )
+                results[condition['name']] = {'training': cond_training}
     else:
         modern_dir = exp_dir / 'modern'
         scriptio_dir = exp_dir / 'scriptio'
         results['modern'] = {}
         results['scriptio'] = {}
+        if args.ablation:
+            for condition in ABLATION_CONDITIONS:
+                results[condition['name']] = {}
 
     # Step 4: Compute final metrics
     print("\n" + "=" * 60)
@@ -294,6 +361,13 @@ def main():
 
     results['modern']['final_metrics'] = compute_final_metrics(modern_dir, 'shakespeare_modern')
     results['scriptio']['final_metrics'] = compute_final_metrics(scriptio_dir, 'shakespeare_scriptio')
+
+    if args.ablation:
+        for condition in ABLATION_CONDITIONS:
+            cond_dir = exp_dir / condition['name']
+            results[condition['name']]['final_metrics'] = compute_final_metrics(
+                cond_dir, condition['dataset']
+            )
 
     # Step 5: Generate samples
     print("\n" + "=" * 60)
@@ -305,6 +379,14 @@ def main():
 
     print("\n--- Scriptio Continua Model Samples ---")
     results['scriptio']['samples'] = generate_samples(scriptio_dir, 'shakespeare_scriptio')
+
+    if args.ablation:
+        for condition in ABLATION_CONDITIONS:
+            print(f"\n--- {condition['label']} Samples ---")
+            cond_dir = exp_dir / condition['name']
+            results[condition['name']]['samples'] = generate_samples(
+                cond_dir, condition['dataset']
+            )
 
     # Step 6: Compare results
     print("\n" + "=" * 60)
@@ -321,6 +403,22 @@ def main():
         print(f"{'Validation Loss':<30} {comparison['modern_loss']:<15.4f} {comparison['scriptio_loss']:<15.4f} {comparison['loss_difference']:+.4f}")
         if comparison.get('modern_bpc'):
             print(f"{'Bits per Character':<30} {comparison['modern_bpc']:<15.4f} {comparison['scriptio_bpc']:<15.4f} {comparison['bpc_difference']:+.4f}")
+
+    # Ablation comparison table
+    if args.ablation:
+        ablation_comparison = compare_all_conditions(results)
+        results['ablation_comparison'] = ablation_comparison
+
+        if ablation_comparison.get('conditions'):
+            print(f"\n{'Condition':<20} {'Val Loss':<12} {'Delta':<12} {'BPC':<12} {'BPC Delta':<12}")
+            print("-" * 68)
+            bl = ablation_comparison['baseline_loss']
+            bl_bpc = ablation_comparison.get('baseline_bpc')
+            print(f"{'Modern (baseline)':<20} {bl:<12.4f} {'---':<12} {bl_bpc:<12.4f} {'---':<12}" if bl_bpc else f"{'Modern (baseline)':<20} {bl:<12.4f}")
+            for key, cond in ablation_comparison['conditions'].items():
+                bpc_str = f"{cond['bpc']:<12.4f}" if cond['bpc'] else 'N/A'
+                bpc_d_str = f"{cond['bpc_delta']:+.4f}" if cond['bpc_delta'] else 'N/A'
+                print(f"{key:<20} {cond['loss']:<12.4f} {cond['loss_delta']:+12.4f} {bpc_str} {bpc_d_str}")
 
     # Save results
     results_path = exp_dir / 'results.json'
@@ -340,6 +438,13 @@ def main():
             print("- Scriptio continua shows LOWER loss (easier to learn)")
         else:
             print("- Similar performance between conditions")
+
+    if args.ablation:
+        print("\nAblation analysis:")
+        print("- Compare each condition's delta to identify which factor matters most")
+        print("- If no-spaces has the largest delta, space removal is the key factor")
+        print("- If no-punct has the largest delta, punctuation carries more signal than expected")
+        print("- If uppercase has the largest delta, case distinction aids learning")
 
     print("\nNext steps for research paper:")
     print("1. Run multiple seeds for statistical significance")
